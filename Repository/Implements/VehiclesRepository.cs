@@ -20,6 +20,7 @@ namespace Repository.Implements
         readonly IConfiguration _config;
         readonly string _clientName;
         readonly IDistributedCache _cache;
+        TimeSpan CacheTimeOut = TimeSpan.FromHours(4);
 
         public VehiclesRepository(IHttpClientFactory ClientFactory, IConfiguration config, IDistributedCache cache)
         {
@@ -65,7 +66,7 @@ namespace Repository.Implements
                         result.VehicleMakes = vehiclesResponse;
 
                         _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result), 
-                            new DistributedCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(2)));
+                            new DistributedCacheEntryOptions().SetAbsoluteExpiration(CacheTimeOut));
                     }
 
                 }
@@ -115,7 +116,7 @@ namespace Repository.Implements
                         result.VehicleModels = modelsResponse;
 
                         _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result),
-                        new DistributedCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(2)));
+                        new DistributedCacheEntryOptions().SetAbsoluteExpiration(CacheTimeOut));
                     }
 
                 }
@@ -130,7 +131,52 @@ namespace Repository.Implements
 
         public Task<IEnumerable<VehicleModel>> ListVehicles(int page)
         {
-            throw new NotImplementedException();
+            var result = new Results.GetVehicleModelsResult();
+            try
+            {
+                var redisInternalKey = $"{nameof(VehiclesRepository)}-{nameof(Results.GetVehicleModelsResult)}";
+                //check value on redis cache
+                string jsonValue = _cache.GetString(redisInternalKey);
+
+
+                if (!string.IsNullOrEmpty(jsonValue))
+                {
+                    result = JsonConvert.DeserializeObject<Results.GetVehicleModelsResult>(jsonValue);
+
+                    return result;
+                }
+
+
+                var root = _config.GetValue<string>(EnviromentConstants.MODEL_ROOT.GetName());
+
+
+
+                using (var httpClient = _httpClientFactory.CreateClient(_clientName))
+                {
+                    var makes = new List<VehicleMakeModel>();
+
+                    var request = new HttpRequestMessage(HttpMethod.Get, root);
+
+                    var response = await httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var modelsResponse = await response.Content.ReadAsAsync<IEnumerable<VehicleModelModel>>();
+
+                        result.VehicleModels = modelsResponse;
+
+                        _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result),
+                        new DistributedCacheEntryOptions().SetAbsoluteExpiration(CacheTimeOut));
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                result.AddSystemError(ex);
+            }
+
+            return result;
         }
 
         public Task<IEnumerable<VehicleVersionModel>> ListVehicleVersions(int modelId)
