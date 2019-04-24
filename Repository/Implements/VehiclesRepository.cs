@@ -44,17 +44,14 @@ namespace Repository.Implements
                 if (!string.IsNullOrEmpty(jsonValue))
                 {
                     result = JsonConvert.DeserializeObject<Results.GetVehicleMakesResult>(jsonValue);
-
-
+                    
                     return result;
                 }
 
                 var root = _config.GetValue<string>(EnviromentConstants.MAKE_ROOT.GetName());
 
                 using (var httpClient = _httpClientFactory.CreateClient(_clientName))
-                {
-                    var makes = new List<VehicleMakeModel>();
-
+                {  
                     var request = new HttpRequestMessage(HttpMethod.Get, root);
 
                     var response = await httpClient.SendAsync(request);
@@ -65,7 +62,7 @@ namespace Repository.Implements
 
                         result.VehicleMakes = vehiclesResponse;
 
-                        _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result), 
+                        _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result),
                             new DistributedCacheEntryOptions().SetAbsoluteExpiration(CacheTimeOut));
                     }
 
@@ -95,17 +92,15 @@ namespace Repository.Implements
 
                     return result;
                 }
-
-
+                
                 var root = _config.GetValue<string>(EnviromentConstants.MODEL_ROOT.GetName());
 
-
+                var param = $"?MakeID={makeId}";
 
                 using (var httpClient = _httpClientFactory.CreateClient(_clientName))
                 {
-                    var makes = new List<VehicleMakeModel>();
-
-                    var request = new HttpRequestMessage(HttpMethod.Get, root);
+                    
+                    var request = new HttpRequestMessage(HttpMethod.Get, root + param);
 
                     var response = await httpClient.SendAsync(request);
 
@@ -129,41 +124,105 @@ namespace Repository.Implements
             return result;
         }
 
-        public Task<IEnumerable<VehicleModel>> ListVehicles(int page)
+        public async Task<Results.GetVehiclesResult> ListVehicles()
         {
-            var result = new Results.GetVehicleModelsResult();
+            var result = new Results.GetVehiclesResult();
             try
             {
-                var redisInternalKey = $"{nameof(VehiclesRepository)}-{nameof(Results.GetVehicleModelsResult)}";
+                var redisInternalKey = $"{nameof(VehiclesRepository)}-{nameof(Results.GetVehiclesResult)}";
                 //check value on redis cache
                 string jsonValue = _cache.GetString(redisInternalKey);
 
 
                 if (!string.IsNullOrEmpty(jsonValue))
                 {
-                    result = JsonConvert.DeserializeObject<Results.GetVehicleModelsResult>(jsonValue);
+                    result = JsonConvert.DeserializeObject<Results.GetVehiclesResult>(jsonValue);
+
+                    return result;
+                }
+                
+                var root = _config.GetValue<string>(EnviromentConstants.VEHICLE_ROOT.GetName());
+
+                using (var httpClient = _httpClientFactory.CreateClient(_clientName))
+                {
+                    var vehicles = new List<VehicleModel>();
+                    var page = 1;
+                    var stopWhile = true;
+                    do
+                    {
+                        var param = $"?Page={page}";
+
+                        var request = new HttpRequestMessage(HttpMethod.Get, root + param);
+
+                        var response = await httpClient.SendAsync(request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var modelsResponse = await response.Content.ReadAsAsync<IEnumerable<VehicleModel>>();
+
+                            if (modelsResponse.Any())
+                                vehicles.AddRange(modelsResponse);
+                            stopWhile = modelsResponse.Any();
+                        }
+                        else
+                        {
+                            stopWhile = false;
+                            result.AddApiConsumeError("erro consuming api webmotors" + response.StatusCode.ToString());
+                        }
+                        
+                        page++;
+                    } while (stopWhile);
+
+
+                    result.Vehicles = vehicles;
+
+                    _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result),
+                    new DistributedCacheEntryOptions().SetAbsoluteExpiration(CacheTimeOut));
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                result.AddSystemError(ex);
+            }
+
+            return result;
+        }
+
+        public async Task<Results.GetVehicleVersionResult> ListVehicleVersions(int modelId)
+        {
+            var result = new Results.GetVehicleVersionResult();
+            try
+            {
+                var redisInternalKey = $"{nameof(VehiclesRepository)}-{nameof(Results.GetVehicleVersionResult)}";
+                //check value on redis cache
+                string jsonValue = _cache.GetString(redisInternalKey);
+
+
+                if (!string.IsNullOrEmpty(jsonValue))
+                {
+                    result = JsonConvert.DeserializeObject<Results.GetVehicleVersionResult>(jsonValue);
 
                     return result;
                 }
 
+                var root = _config.GetValue<string>(EnviromentConstants.VERSION_ROOT.GetName());
 
-                var root = _config.GetValue<string>(EnviromentConstants.MODEL_ROOT.GetName());
-
-
+                var param = $"?ModelID={modelId}";
 
                 using (var httpClient = _httpClientFactory.CreateClient(_clientName))
                 {
-                    var makes = new List<VehicleMakeModel>();
-
-                    var request = new HttpRequestMessage(HttpMethod.Get, root);
+                    
+                    var request = new HttpRequestMessage(HttpMethod.Get, root + param);
 
                     var response = await httpClient.SendAsync(request);
 
                     if (response.IsSuccessStatusCode)
                     {
-                        var modelsResponse = await response.Content.ReadAsAsync<IEnumerable<VehicleModelModel>>();
+                        var modelsResponse = await response.Content.ReadAsAsync<IEnumerable<VehicleVersionModel>>();
 
-                        result.VehicleModels = modelsResponse;
+                        result.VehicleVersions = modelsResponse;
 
                         _cache.SetString(redisInternalKey, JsonConvert.SerializeObject(result),
                         new DistributedCacheEntryOptions().SetAbsoluteExpiration(CacheTimeOut));
@@ -177,11 +236,6 @@ namespace Repository.Implements
             }
 
             return result;
-        }
-
-        public Task<IEnumerable<VehicleVersionModel>> ListVehicleVersions(int modelId)
-        {
-            throw new NotImplementedException();
         }
     }
 }

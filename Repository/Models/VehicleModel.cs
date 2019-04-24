@@ -16,7 +16,7 @@ namespace Repository.Models
 
         public string Version { get; set; }
 
-        public string ImageUrl { get; set; }
+        public string Image { get; set; }
 
         public int Km { get; set; }
 

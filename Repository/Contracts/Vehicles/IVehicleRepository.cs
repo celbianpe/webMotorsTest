@@ -7,13 +7,14 @@ namespace Repository.Contracts.Vehicles
 {
     public interface IVehicleRepository
     {
-        Task<IEnumerable<Models.VehicleModel>> ListVehicles(int page);
+        Task<Results.GetVehiclesResult> ListVehicles();
 
         Task<Results.GetVehicleMakesResult> ListVehicleMakes();
 
         Task<Results.GetVehicleModelsResult> ListVehicleModels(int makeId);
-        
-        Task<IEnumerable<Models.VehicleVersionModel>> ListVehicleVersions(int modelId);
+
+        Task<Results.GetVehicleVersionResult> ListVehicleVersions(int modelId);
+
 
 
     }
