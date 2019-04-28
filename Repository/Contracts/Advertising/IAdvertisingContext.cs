@@ -8,10 +8,13 @@ namespace Repository.Contracts.Advertising
 {
     public interface IAdvertisingRepository
     {
-        Task<GetAdvertisingResult> GetById(Guid id);
+        Task<Results.AddAdvertisingResult> Create(Models.AdvertisingModel model);
+
+        Task<Results.UpdateAdvertisingResult> UpdateItem(Models.AdvertisingModel model);
+
+        Task<Results.RemoveAdvertisingResult> RemoveItem(int advertisingId);
 
 
-
-
+        Task<Results.GetAdvertisingResult> List();
     }
 }

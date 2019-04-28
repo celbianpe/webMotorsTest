@@ -19,6 +19,8 @@ namespace Application
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            AutoMapperConfiguration.Initialize();
+
         }
 
         public IConfiguration Configuration { get; }

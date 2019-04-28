@@ -26,7 +26,7 @@ namespace Application.Commons
             cfg.Advanced.AllowAdditiveTypeMapCreation = true;
 
             cfg.AddProfile(new MapperProfile.BaseProfile());
-     
+            cfg.AddProfile(new MapperProfile.AdvertisingProfile());
         }
     }
 }
