@@ -1,6 +1,6 @@
 FROM microsoft/dotnet:2.2-aspnetcore-runtime AS base
 WORKDIR /app
-EXPOSE 8181
+EXPOSE 80
 
 ENV RELATIONAL_PORT=3306
 ENV BASE_ADDRESS="http://desafioonline.webmotors.com.br"

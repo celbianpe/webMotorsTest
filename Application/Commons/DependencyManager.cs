@@ -77,7 +77,7 @@ namespace Application.Commons
 
             //Add database context Use Mysql not SQL server 
             Services.AddDbContext<MySqlContext>(
-            options => options.UseMySql(BuildMysqlConnectionString(Configuration, "teste_webmotors")),
+            options => options.UseMySql(BuildMysqlConnectionString(Configuration, "webmotors")),
             ServiceLifetime.Transient, ServiceLifetime.Transient);
 
             return this;
